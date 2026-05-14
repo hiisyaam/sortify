@@ -1,5 +1,5 @@
 "use client"
-
+import { supabase } from "@/lib/client"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { BottomNav } from "@/components/bottom-nav"
@@ -42,17 +42,60 @@ export default function DashboardPage() {
   const [courseProgress, setCourseProgress] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("sortify_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    } else {
-      router.push("/")
+    const getUser = async () => {
+
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      // belum login
+      if (!authUser) {
+        router.push("/login")
+        return
+      }
+
+      // ambil progress
+      const storedProgress = localStorage.getItem("sortify_progress")
+
+      if (storedProgress) {
+        setCourseProgress(JSON.parse(storedProgress))
+      }
+
+      // ambil user dari localStorage
+      const storedUser = localStorage.getItem("sortify_user")
+
+      if (storedUser) {
+
+        setUser(JSON.parse(storedUser))
+        return
+
+      }
+
+      // fallback kalau localStorage kosong
+      const newUser = {
+        id: authUser.id,
+        name:
+          authUser.user_metadata?.username ||
+          authUser.user_metadata?.name ||
+          authUser.email?.split("@")[0] ||
+          "Player",
+        email: authUser.email || "",
+        points: 0,
+        streak: 0,
+        lives: 3,
+        completedCourses: [],
+      }
+
+      localStorage.setItem(
+        "sortify_user",
+        JSON.stringify(newUser)
+      )
+
+      setUser(newUser)
     }
 
-    const storedProgress = localStorage.getItem("sortify_progress")
-    if (storedProgress) {
-      setCourseProgress(JSON.parse(storedProgress))
-    }
+    getUser()
+
   }, [router])
 
   if (!user) {
@@ -142,7 +185,7 @@ export default function DashboardPage() {
             <br />
             To Play
           </h2>
-          <button 
+          <button
             onClick={() => router.push("/courses")}
             className="w-10 h-10 bg-white rounded-full border-2 border-[#E0DFD8] flex items-center justify-center"
           >
@@ -155,15 +198,14 @@ export default function DashboardPage() {
           {courses.map((course, index) => {
             const progress = courseProgress[course.id] || 0
             const isUnlocked = !course.isLocked || (index > 0 && (courseProgress[courses[index - 1].id] || 0) >= 100)
-            
+
             return (
               <button
                 key={course.id}
                 onClick={() => isUnlocked && router.push(`/courses/${course.id}`)}
                 disabled={!isUnlocked}
-                className={`w-full ${course.color} rounded-sm p-5 text-left transition-all active:scale-[0.98] ${
-                  !isUnlocked ? "opacity-60" : ""
-                }`}
+                className={`w-full ${course.color} rounded-sm p-5 text-left transition-all active:scale-[0.98] ${!isUnlocked ? "opacity-60" : ""
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -184,9 +226,8 @@ export default function DashboardPage() {
                       {course.description}
                     </p>
                   </div>
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                    isUnlocked ? "bg-[#100F06]" : "bg-[#100F06]/30"
-                  }`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isUnlocked ? "bg-[#100F06]" : "bg-[#100F06]/30"
+                    }`}>
                     {isUnlocked ? (
                       <ChevronRight className="w-6 h-6 text-white" />
                     ) : (

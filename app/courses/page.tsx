@@ -56,7 +56,7 @@ export default function CoursesPage() {
     if (storedUser) {
       setUser(JSON.parse(storedUser))
     } else {
-      router.push("/")
+      router.push("/login")
     }
 
     const storedProgress = localStorage.getItem("sortify_progress")

@@ -3,21 +3,21 @@ import { Unbounded, Space_Grotesk, Fira_Code } from 'next/font/google'
 import { AppProvider } from '@/lib/app-context'
 import './globals.css'
 
-const unbounded = Unbounded({ 
+const unbounded = Unbounded({
   subsets: ["latin"],
   weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-unbounded',
   display: 'swap',
 })
 
-const spaceGrotesk = Space_Grotesk({ 
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-space-grotesk',
   display: 'swap',
 })
 
-const firaCode = Fira_Code({ 
+const firaCode = Fira_Code({
   subsets: ["latin"],
   variable: '--font-fira-code',
   display: 'swap',
@@ -32,6 +32,15 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Sortify',
   },
+  icons: {
+    icon: [
+      { url: '/icon-192x192.jpg', sizes: '192x192', type: 'image/jpeg' },
+      { url: '/icon-512x512.jpg', sizes: '512x512', type: 'image/jpeg' },
+    ],
+    apple: [
+      { url: '/apple-icon.png' }
+    ]
+  }
 }
 
 export const viewport: Viewport = {

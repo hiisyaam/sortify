@@ -49,92 +49,83 @@ export default function RegisterPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
 
-    if (!validateForm()) return
+  e.preventDefault()
 
-    try {
-      setIsLoading(true)
+  if (!validateForm()) return
 
-      setErrors({})
+  setIsLoading(true)
 
-      // cek username
-      const { data: existingUsername } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("username", formData.name)
-        .single()
+  // cek email & username
+  const { data: existingUsers } = await supabase
+    .from("users")
+    .select("username, email")
 
-      if (existingUsername) {
-        setErrors({
-          name: "Username sudah ada yang punya",
-        })
+  const usernameExists = existingUsers?.some(
+    (user) =>
+      user.username.toLowerCase() === formData.name.toLowerCase()
+  )
 
-        setIsLoading(false)
-        return
-      }
+  const emailExists = existingUsers?.some(
+    (user) =>
+      user.email.toLowerCase() === formData.email.toLowerCase()
+  )
 
-      // cek email
-      const { data: existingEmail } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("email", formData.email)
-        .single()
-
-      if (existingEmail) {
-        setErrors({
-          email: "Email sudah terdaftar",
-        })
-
-        setIsLoading(false)
-        return
-      }
-
-      // register auth
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-      })
-
-      if (error) {
-        setErrors({
-          email: error.message,
-        })
-
-        setIsLoading(false)
-        return
-      }
-
-      // insert profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          id: data.user?.id,
-          username: formData.name,
-          email: formData.email,
-        })
-
-      if (profileError) {
-        setErrors({
-          email: profileError.message,
-        })
-
-        setIsLoading(false)
-        return
-      }
-
-      router.push("/login")
-
-    } catch (error) {
-
-      setErrors({
-        email: "Terjadi kesalahan",
-      })
-
-    } finally {
-      setIsLoading(false)
-    }
+  if (usernameExists) {
+    setErrors({ name: "Username sudah digunakan" })
+    setIsLoading(false)
+    return
   }
+
+  if (emailExists) {
+    setErrors({ email: "Email sudah digunakan" })
+    setIsLoading(false)
+    return
+  }
+
+  // register auth
+  const { data, error } = await supabase.auth.signUp({
+    email: formData.email,
+    password: formData.password,
+    options: {
+      data: {
+        username: formData.name,
+      },
+    },
+  })
+
+  if (error) {
+    setErrors({
+      email: error.message,
+    })
+
+    setIsLoading(false)
+    return
+  }
+
+  // simpan ke tabel users
+  await supabase.from("users").insert({
+    id: data.user?.id,
+    username: formData.name,
+    email: formData.email,
+  })
+
+  // simpan local user
+  localStorage.setItem(
+    "sortify_user",
+    JSON.stringify({
+      id: data.user?.id,
+      name: formData.name,
+      email: formData.email,
+      points: 0,
+      streak: 0,
+      lives: 3,
+      completedCourses: [],
+    })
+  )
+
+  router.push("/dashboard")
+}
 
   return (
     <div className="min-h-screen bg-[#F5F4ED] px-5 py-6 flex flex-col">

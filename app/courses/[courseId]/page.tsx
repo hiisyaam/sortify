@@ -141,7 +141,7 @@ export default function CoursePage() {
     if (storedUser) {
       setUser(JSON.parse(storedUser))
     } else {
-      router.push("/")
+      router.push("/login")
       return
     }
 
