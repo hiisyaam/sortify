@@ -35,11 +35,14 @@ export default function ProfilePage() {
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", authUser.id)
         .single()
+
+      console.log(profile)
+      console.log(error)
 
       if (!profile) {
         router.push("/login")

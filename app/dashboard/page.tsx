@@ -42,61 +42,50 @@ export default function DashboardPage() {
   const [courseProgress, setCourseProgress] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    const getUser = async () => {
 
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
+  const getUser = async () => {
 
-      // belum login
-      if (!authUser) {
-        router.push("/login")
-        return
-      }
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
-      // ambil progress
-      const storedProgress = localStorage.getItem("sortify_progress")
-
-      if (storedProgress) {
-        setCourseProgress(JSON.parse(storedProgress))
-      }
-
-      // ambil user dari localStorage
-      const storedUser = localStorage.getItem("sortify_user")
-
-      if (storedUser) {
-
-        setUser(JSON.parse(storedUser))
-        return
-
-      }
-
-      // fallback kalau localStorage kosong
-      const newUser = {
-        id: authUser.id,
-        name:
-          authUser.user_metadata?.username ||
-          authUser.user_metadata?.name ||
-          authUser.email?.split("@")[0] ||
-          "Player",
-        email: authUser.email || "",
-        points: 0,
-        streak: 0,
-        lives: 3,
-        completedCourses: [],
-      }
-
-      localStorage.setItem(
-        "sortify_user",
-        JSON.stringify(newUser)
-      )
-
-      setUser(newUser)
+    if (!authUser) {
+      router.push("/login")
+      return
     }
 
-    getUser()
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .single()
 
-  }, [router])
+    if (error || !profile) {
+      console.log(error)
+      router.push("/login")
+      return
+    }
+
+    setUser({
+      id: authUser.id,
+      name: profile.username,
+      email: profile.email,
+      points: profile.points || 0,
+      streak: profile.streak || 0,
+      lives: profile.lives || 3,
+      completedCourses: profile.completedCourses || [],
+    })
+
+    const storedProgress = localStorage.getItem("sortify_progress")
+
+    if (storedProgress) {
+      setCourseProgress(JSON.parse(storedProgress))
+    }
+  }
+
+  getUser()
+
+}, [router])
 
   if (!user) {
     return (

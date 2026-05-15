@@ -26,10 +26,12 @@ import {
   XCircle,
   RefreshCw,
   Trophy,
-  Star
+  Star,
+  BookOpen,
+  Target
 } from "lucide-react"
 
-type ModuleType = "visualization" | "puzzle" | "arrangement" | "success"
+type ModuleType = "intro" | "visualization" | "puzzle" | "arrangement" | "success"
 
 interface CourseData {
   id: string
@@ -38,6 +40,7 @@ interface CourseData {
   generateSteps: (arr: number[]) => SortingStep[]
   puzzles: CodePuzzle[]
   codeBlocks: CodeBlock[]
+  introDescription: string
 }
 
 const courseDataMap: Record<string, CourseData> = {
@@ -48,6 +51,7 @@ const courseDataMap: Record<string, CourseData> = {
     generateSteps: generateBubbleSortSteps,
     puzzles: bubbleSortPuzzles,
     codeBlocks: bubbleSortCodeBlocks,
+    introDescription: "Bubble Sort adalah algoritma pengurutan sederhana yang membandingkan setiap pasangan elemen yang berdekatan dan menukarnya jika posisinya salah. Proses ini diulang sampai tidak ada lagi pertukaran yang terjadi, seolah-olah elemen terkecil/terbesar 'menggelembung' ke posisi yang benar.",
   },
   "selection-sort": {
     id: "selection-sort",
@@ -56,6 +60,7 @@ const courseDataMap: Record<string, CourseData> = {
     generateSteps: generateSelectionSortSteps,
     puzzles: selectionSortPuzzles,
     codeBlocks: selectionSortCodeBlocks,
+    introDescription: "Selection Sort adalah algoritma pengurutan yang mencari elemen terkecil dalam bagian array yang belum terurut, lalu menukarnya dengan elemen pertama dari bagian itu. Proses ini diulang dengan menggeser batas bagian yang terurut hingga seluruh array berhasil diurus berurutan.",
   },
 }
 
@@ -65,7 +70,7 @@ export default function CoursePage() {
   const courseId = params.courseId as string
 
   const [user, setUser] = useState<User | null>(null)
-  const [currentModule, setCurrentModule] = useState<ModuleType>("visualization")
+  const [currentModule, setCurrentModule] = useState<ModuleType>("intro")
   const [lives, setLives] = useState(3)
   const [score, setScore] = useState(0)
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0)
@@ -131,7 +136,8 @@ export default function CoursePage() {
       audioLanjutRef.current.currentTime = 0
       audioLanjutRef.current.play().catch(() => { })
     }
-    setCurrentModule("puzzle")
+    const isArrangementReady = currentPuzzleIndex >= courseDataMap[courseId]?.puzzles.length
+    setCurrentModule(isArrangementReady ? "arrangement" : "puzzle")
   }
 
   const courseData = courseDataMap[courseId]
@@ -223,7 +229,7 @@ export default function CoursePage() {
     localStorage.removeItem(`sortify_cooldown_${courseId}`)
     setScore(0)
     setCurrentPuzzleIndex(0)
-    setCurrentModule("visualization")
+    setCurrentModule("intro")
     const arr = generateRandomArray(6, 50)
     setSortingArray(arr)
     setSortingSteps(courseData.generateSteps(arr))
@@ -244,10 +250,31 @@ export default function CoursePage() {
   }
 
   const modules = [
+    { id: "intro", icon: BookOpen, label: "Intro" },
     { id: "visualization", icon: Play, label: "Visual" },
-    { id: "puzzle", icon: Puzzle, label: "Puzzle" },
-    { id: "arrangement", icon: Code, label: "Susun" },
+    { id: "challenge", icon: Target, label: "Challenge" }
   ]
+
+  const handleTabClick = (moduleId: string) => {
+    if (moduleId === "challenge") {
+      const isArrangementReady = currentPuzzleIndex >= courseData.puzzles.length
+      setCurrentModule(isArrangementReady ? "arrangement" : "puzzle")
+    } else {
+      setCurrentModule(moduleId as ModuleType)
+    }
+  }
+
+  const getModuleStatus = (moduleId: string) => {
+    const currentStage = (currentModule === "puzzle" || currentModule === "arrangement") ? "challenge" : currentModule
+    const stages = ["intro", "visualization", "challenge", "success"]
+    const currentIndex = stages.indexOf(currentStage)
+    const moduleIndex = stages.indexOf(moduleId)
+
+    return {
+      isActive: currentStage === moduleId,
+      isPast: moduleIndex < currentIndex
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F4ED]">
@@ -283,19 +310,19 @@ export default function CoursePage() {
         {/* Module Progress */}
         {currentModule !== "success" && (
           <div className="flex items-center gap-2">
-            {modules.map((module, index) => {
+            {modules.map((module) => {
               const Icon = module.icon
-              const isActive = currentModule === module.id
-              const isPast = modules.findIndex(m => m.id === currentModule) > index
+              const { isActive, isPast } = getModuleStatus(module.id)
 
               return (
-                <div
+                <button
                   key={module.id}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full transition-all ${isActive
-                    ? "bg-[#100F06] text-white"
-                    : isPast
-                      ? "bg-[#00917A] text-white"
-                      : "bg-white border-2 border-[#E0DFD8] text-[#6B6B6B]"
+                  onClick={() => handleTabClick(module.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full transition-all cursor-pointer active:scale-95 ${isActive
+                      ? "bg-[#100F06] text-white"
+                      : isPast
+                        ? "bg-[#00917A] text-white"
+                        : "bg-white border-2 border-[#E0DFD8] text-[#6B6B6B]"
                     }`}
                 >
                   {isPast ? (
@@ -304,7 +331,7 @@ export default function CoursePage() {
                     <Icon className="w-4 h-4" />
                   )}
                   <span className="text-xs font-medium">{module.label}</span>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -335,7 +362,7 @@ export default function CoursePage() {
       {/* Main Content */}
       <div className="px-5 pb-8">
         {/* Game Over / Cooldown State */}
-        {lives === 0 && currentModule !== "success" && (
+        {lives === 0 && (currentModule === "puzzle" || currentModule === "arrangement") && (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-[#FFDA57]/20 rounded-3xl flex items-center justify-center mx-auto mb-4 border-2 border-[#FFDA57]/30">
               <RefreshCw className="w-10 h-10 text-[#FFDA57] animate-spin-slow" />
@@ -360,10 +387,30 @@ export default function CoursePage() {
           </div>
         )}
 
-        {/* Visualization Module */}
-        {currentModule === "visualization" && lives > 0 && (
+        {/* Intro Module */}
+        {currentModule === "intro" && (
           <div className="space-y-4">
-            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8]">
+            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8] animate-slide-up stagger-1 opacity-0">
+              <h2 className="font-[var(--font-unbounded)] text-xl font-bold text-[#100F06] mb-3">
+                Pengenalan Singkat
+              </h2>
+              <p className="text-[#6B6B6B] text-sm leading-relaxed mb-4">
+                {courseData.introDescription}
+              </p>
+            </div>
+            <button
+              className="w-full bg-[#00917A] text-white font-semibold py-4 rounded-full shadow-playful active:translate-y-1 active:shadow-none transition-all animate-slide-up stagger-2 opacity-0"
+              onClick={() => handleTabClick("visualization")}
+            >
+              Mulai Visualisasi
+            </button>
+          </div>
+        )}
+
+        {/* Visualization Module */}
+        {currentModule === "visualization" && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8] animate-slide-up stagger-1 opacity-0">
               <h2 className="font-[var(--font-unbounded)] text-lg font-bold text-[#100F06] mb-2">
                 Visualisasi
               </h2>
@@ -378,10 +425,10 @@ export default function CoursePage() {
             </div>
 
             <button
-              className="w-full bg-[#00917A] text-white font-semibold py-4 rounded-full shadow-playful active:translate-y-1 active:shadow-none transition-all"
+              className="w-full bg-[#00917A] text-white font-semibold py-4 rounded-full shadow-playful active:translate-y-1 active:shadow-none transition-all animate-slide-up stagger-2 opacity-0"
               onClick={handleLanjutPuzzle}
             >
-              Lanjut ke Puzzle
+              Lanjut ke Challenge
             </button>
           </div>
         )}
@@ -389,7 +436,7 @@ export default function CoursePage() {
         {/* Puzzle Module */}
         {currentModule === "puzzle" && lives > 0 && (
           <div className="space-y-4">
-            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8]">
+            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8] animate-slide-up stagger-1 opacity-0">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-[var(--font-unbounded)] text-lg font-bold text-[#100F06]">
                   Puzzle Code
@@ -415,7 +462,7 @@ export default function CoursePage() {
         {/* Arrangement Module */}
         {currentModule === "arrangement" && lives > 0 && (
           <div className="space-y-4">
-            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8]">
+            <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8] animate-slide-up stagger-1 opacity-0">
               <h2 className="font-[var(--font-unbounded)] text-lg font-bold text-[#100F06] mb-2">
                 Susun Kode
               </h2>

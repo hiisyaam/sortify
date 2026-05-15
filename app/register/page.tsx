@@ -85,30 +85,27 @@ export default function RegisterPage() {
 
   // register auth
   const { data, error } = await supabase.auth.signUp({
-    email: formData.email,
-    password: formData.password,
-    options: {
-      data: {
-        username: formData.name,
-      },
+  email: formData.email,
+  password: formData.password,
+  options: {
+    data: {
+      username: formData.name,
     },
-  })
+  },
+})
 
-  if (error) {
-    setErrors({
-      email: error.message,
-    })
+if (error) {
+  console.log(error)
+  return
+}
 
-    setIsLoading(false)
-    return
-  }
-
-  // simpan ke tabel users
-  await supabase.from("users").insert({
-    id: data.user?.id,
+if (data.user) {
+  await supabase.from("profiles").insert({
+    id: data.user.id,
     username: formData.name,
     email: formData.email,
   })
+}
 
   // simpan local user
   localStorage.setItem(

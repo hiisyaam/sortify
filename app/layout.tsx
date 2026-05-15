@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Unbounded, Space_Grotesk, Fira_Code } from 'next/font/google'
 import { AppProvider } from '@/lib/app-context'
+import { NetworkStatus } from '@/components/network-status'
+import { InstallPrompt } from '@/components/install-prompt'
 import './globals.css'
 
 const unbounded = Unbounded({
@@ -34,8 +36,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icon-192x192.jpg', sizes: '192x192', type: 'image/jpeg' },
-      { url: '/icon-512x512.jpg', sizes: '512x512', type: 'image/jpeg' },
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       { url: '/apple-icon.png' }
@@ -60,9 +62,12 @@ export default function RootLayout({
     <html lang="id" className="bg-[#F5F4ED]">
       <body className={`${unbounded.variable} ${spaceGrotesk.variable} ${firaCode.variable} font-sans antialiased min-h-screen`}>
         <AppProvider>
-          <main className="max-w-[430px] mx-auto min-h-screen relative">
-            {children}
-          </main>
+          <NetworkStatus>
+            <main className="max-w-[430px] mx-auto min-h-screen relative">
+              {children}
+              <InstallPrompt />
+            </main>
+          </NetworkStatus>
         </AppProvider>
       </body>
     </html>

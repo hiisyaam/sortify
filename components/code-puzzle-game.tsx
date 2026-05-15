@@ -91,12 +91,12 @@ export function CodePuzzleGame({ puzzle, lives, onWrongAnswer, onCorrect }: Code
             <span className="text-[#A0A0A0]">{parts[0]}</span>
             <span
               className={`inline-block min-w-[60px] px-2 py-0.5 mx-1 rounded text-center transition-colors ${selected
-                  ? isCorrect
-                    ? "bg-[#00917A] text-white"
-                    : isWrong
-                      ? "bg-[#F47575] text-white"
-                      : "bg-[#FFDA57] text-[#100F06]"
-                  : "bg-[#E0DFD8] border border-dashed border-[#6B6B6B]"
+                ? isCorrect
+                  ? "bg-[#00917A] text-white"
+                  : isWrong
+                    ? "bg-[#F47575] text-white"
+                    : "bg-[#FFDA57] text-[#100F06]"
+                : "bg-[#E0DFD8] border border-dashed border-[#6B6B6B]"
                 }`}
             >
               {selected || "???"}
@@ -142,8 +142,8 @@ export function CodePuzzleGame({ puzzle, lives, onWrongAnswer, onCorrect }: Code
                   onClick={() => handleSelectOption(blank.id, option)}
                   disabled={isChecking}
                   className={`p-3 rounded-2xl font-mono text-xs text-center transition-all ${isSelected
-                      ? "bg-[#FFDA57] text-[#100F06] ring-2 ring-[#FFDA57]"
-                      : "bg-white text-[#100F06] border-2 border-[#E0DFD8] hover:border-[#FFDA57]"
+                    ? "bg-[#FFDA57] text-[#100F06] ring-2 ring-[#FFDA57]"
+                    : "bg-white text-[#100F06] border-2 border-[#E0DFD8] hover:border-[#FFDA57]"
                     }`}
                 >
                   {option}
@@ -164,17 +164,14 @@ export function CodePuzzleGame({ puzzle, lives, onWrongAnswer, onCorrect }: Code
               const isSelected = selectedAnswers[blank.id] === option
               const isCorrectOption = option === blank.correctAnswer
               const isWrongSelected = isSelected && !isCorrectOption
-              const showCorrect = isCorrectOption
 
               return (
                 <button
                   key={option}
                   disabled
-                  className={`p-3 rounded-2xl font-mono text-xs text-center transition-all ${showCorrect
-                      ? "bg-[#00917A] text-white ring-2 ring-[#00917A]"
-                      : isWrongSelected
-                        ? "bg-[#F47575] text-white ring-2 ring-[#F47575] animate-shake"
-                        : "bg-white text-[#100F06] border-2 border-[#E0DFD8] opacity-50"
+                  className={`p-3 rounded-2xl font-mono text-xs text-center transition-all ${isWrongSelected
+                    ? "bg-[#F47575] text-white ring-2 ring-[#F47575] animate-shake"
+                    : "bg-white text-[#100F06] border-2 border-[#E0DFD8] opacity-50"
                     }`}
                 >
                   {option}
@@ -188,9 +185,9 @@ export function CodePuzzleGame({ puzzle, lives, onWrongAnswer, onCorrect }: Code
       {/* Result */}
       {result && (
         <div
-          className={`flex items-center gap-3 p-4 rounded-2xl animate-slide-up ${result === "correct"
-              ? "bg-[#00917A]/10 border-2 border-[#00917A]/30"
-              : "bg-[#F47575]/10 border-2 border-[#F47575]/30"
+          className={`flex items-center gap-3 p-4 rounded-sm animate-slide-up ${result === "correct"
+            ? "bg-[#00917A]/10 border-2 border-[#00917A]/30"
+            : "bg-[#F47575]/10 border-2 border-[#F47575]/30"
             }`}
         >
           {result === "correct" ? (
@@ -204,7 +201,7 @@ export function CodePuzzleGame({ puzzle, lives, onWrongAnswer, onCorrect }: Code
               <div className="flex-1">
                 <span className="font-semibold text-[#F47575]">Salah!</span>
                 <p className="text-xs text-[#F47575]/80 mt-0.5">
-                  {lives > 1 ? `Sisa ${lives - 1} nyawa. Coba lagi!` : "Nyawa habis setelah ini!"}
+                  Sisa {lives} nyawa. Coba lagi!
                 </p>
               </div>
             </>
@@ -213,10 +210,10 @@ export function CodePuzzleGame({ puzzle, lives, onWrongAnswer, onCorrect }: Code
       )}
 
       {/* Tombol Coba Lagi saat salah */}
-      {result === "incorrect" && lives > 1 && (
+      {result === "incorrect" && (
         <button
           onClick={handleRetry}
-          className="w-full flex items-center justify-center gap-2 bg-[#F47575] text-white font-semibold py-4 rounded-full"
+          className="w-full flex items-center justify-center gap-2 bg-[#F47575] text-white font-semibold py-4 rounded-sm"
         >
           <RotateCcw className="w-4 h-4" />
           Coba Lagi

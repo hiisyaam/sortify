@@ -147,9 +147,12 @@ export function CodeArrangementGame({ blocks, lives, onWrongAnswer, onCorrect }:
     setIsChecking(true)
 
     setTimeout(() => {
-      // Validasi berbasis order saja — bukan konten string
+      // Validasi berbasis konten teks agar blok duplikat (seperti '}') dapat bertukar posisi dengan bebas
       const isCorrect = arrangedBlocks.length === blocks.length &&
-        arrangedBlocks.every((block, index) => block.order === index + 1)
+        arrangedBlocks.every((block, index) => {
+          const expectedBlock = blocks.find(b => b.order === index + 1)
+          return expectedBlock && block.code.trim() === expectedBlock.code.trim()
+        })
 
       if (isCorrect) {
         setResult("correct")
@@ -189,7 +192,10 @@ export function CodeArrangementGame({ blocks, lives, onWrongAnswer, onCorrect }:
             {arrangedBlocks.map((block, index) => {
               const isWrongBlock = result === "incorrect" && errorType === "syntax" && index === errorLine
               const isCorrectBlock = result === "correct"
-              const isWrongOrder = result === "incorrect" && block.order !== index + 1
+              const isWrongOrder = result === "incorrect" && (() => {
+                const expectedBlock = blocks.find(b => b.order === index + 1)
+                return !expectedBlock || block.code.trim() !== expectedBlock.code.trim()
+              })()
 
               return (
                 <div
@@ -200,12 +206,12 @@ export function CodeArrangementGame({ blocks, lives, onWrongAnswer, onCorrect }:
                   onDragEnd={handleDragEnd}
                   onClick={() => !result && handleRemoveBlock(block)}
                   className={`flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all ${isCorrectBlock
-                      ? "bg-[#00917A]/30"
-                      : isWrongBlock
-                        ? "bg-[#F47575]/50 animate-shake ring-2 ring-[#F47575]"
-                        : isWrongOrder
-                          ? "bg-[#F47575]/20"
-                          : "bg-[#2A2A2A] active:bg-[#3A3A3A]"
+                    ? "bg-[#00917A]/30"
+                    : isWrongBlock
+                      ? "bg-[#F47575]/50 animate-shake ring-2 ring-[#F47575]"
+                      : isWrongOrder
+                        ? "bg-[#F47575]/20"
+                        : "bg-[#2A2A2A] active:bg-[#3A3A3A]"
                     } ${draggedBlock?.id === block.id ? "opacity-50" : ""}`}
                 >
                   <GripVertical className="w-4 h-4 text-[#6B6B6B]" />
@@ -276,7 +282,7 @@ export function CodeArrangementGame({ blocks, lives, onWrongAnswer, onCorrect }:
             </div>
           </div>
           <p className="text-xs text-[#6B6B6B] text-center">
-            {lives > 1 ? `Sisa ${lives - 1} nyawa. Periksa kurung kurawal dan coba lagi!` : "Nyawa habis setelah ini!"}
+            Sisa {lives} nyawa. Periksa kurung kurawal dan coba lagi!
           </p>
         </div>
       )}
@@ -297,8 +303,8 @@ export function CodeArrangementGame({ blocks, lives, onWrongAnswer, onCorrect }:
             <div className="space-y-1">
               {errorMessage.split('\n').map((line, i) => (
                 <p key={i} className={`font-mono text-xs ${line.startsWith("LogicError") ? "text-[#FFDA57]"
-                    : line.startsWith("→ Output") ? "text-[#F47575]"
-                      : "text-[#A0A0A0]"
+                  : line.startsWith("→ Output") ? "text-[#F47575]"
+                    : "text-[#A0A0A0]"
                   }`}>
                   {line}
                 </p>
@@ -306,16 +312,16 @@ export function CodeArrangementGame({ blocks, lives, onWrongAnswer, onCorrect }:
             </div>
           </div>
           <p className="text-xs text-[#6B6B6B] text-center">
-            {lives > 1 ? `Sisa ${lives - 1} nyawa. Perhatikan urutan logika algoritma!` : "Nyawa habis setelah ini!"}
+            Sisa {lives} nyawa. Perhatikan urutan logika algoritma!
           </p>
         </div>
       )}
 
       {/* Tombol Coba Lagi */}
-      {result === "incorrect" && lives > 1 && (
+      {result === "incorrect" && (
         <button
           onClick={handleRetry}
-          className="w-full flex items-center justify-center gap-2 bg-[#F47575] text-white font-semibold py-4 rounded-full"
+          className="w-full flex items-center justify-center gap-2 bg-[#F47575] text-white font-semibold py-4 rounded-sm"
         >
           <RotateCcw className="w-4 h-4" />
           Coba Lagi
