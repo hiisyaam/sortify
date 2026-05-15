@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { supabase } from "@/lib/client"
 import { SortingVisualizer } from "@/components/sorting-visualizer"
 import { CodePuzzleGame } from "@/components/code-puzzle-game"
 import { CodeArrangementGame } from "@/components/code-arrangement-game"
@@ -143,13 +144,39 @@ export default function CoursePage() {
   const courseData = courseDataMap[courseId]
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("sortify_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    } else {
-      router.push("/login")
-      return
+    const getUser = async () => {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        router.push("/login")
+        return
+      }
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", authUser.id)
+        .single()
+
+      if (error || !profile) {
+        router.push("/login")
+        return
+      }
+
+      setUser({
+        id: authUser.id,
+        name: profile.username,
+        email: profile.email,
+        points: profile.points || 0,
+        streak: profile.streak || 0,
+        lives: profile.lives || 3,
+        completedCourses: profile.completedCourses || [],
+      })
     }
+
+    getUser()
 
     if (!courseData) {
       router.push("/courses")
@@ -205,15 +232,25 @@ export default function CoursePage() {
     }
   }
 
-  const saveProgress = () => {
+  const saveProgress = async () => {
     if (user) {
+      const updatedPoints = user.points + score + 50
+      const updatedStreak = user.streak + 1
+
       const updatedUser = {
         ...user,
-        points: user.points + score + 50,
-        streak: user.streak + 1,
+        points: updatedPoints,
+        streak: updatedStreak,
       }
-      localStorage.setItem("sortify_user", JSON.stringify(updatedUser))
       setUser(updatedUser)
+
+      await supabase
+        .from("profiles")
+        .update({
+          points: updatedPoints,
+          streak: updatedStreak,
+        })
+        .eq("id", user.id)
     }
 
     const storedProgress = localStorage.getItem("sortify_progress")
@@ -319,10 +356,10 @@ export default function CoursePage() {
                   key={module.id}
                   onClick={() => handleTabClick(module.id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full transition-all cursor-pointer active:scale-95 ${isActive
-                      ? "bg-[#100F06] text-white"
-                      : isPast
-                        ? "bg-[#00917A] text-white"
-                        : "bg-white border-2 border-[#E0DFD8] text-[#6B6B6B]"
+                    ? "bg-[#100F06] text-white"
+                    : isPast
+                      ? "bg-[#00917A] text-white"
+                      : "bg-white border-2 border-[#E0DFD8] text-[#6B6B6B]"
                     }`}
                 >
                   {isPast ? (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/client"
 import { BottomNav } from "@/components/bottom-nav"
 import { User } from "@/lib/types"
 import { ChevronRight, Lock, CheckCircle, ArrowLeft, Star } from "lucide-react"
@@ -52,12 +53,39 @@ export default function CoursesPage() {
   const [activeTab, setActiveTab] = useState<"games" | "product">("games")
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("sortify_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    } else {
-      router.push("/login")
+    const getUser = async () => {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (!authUser) {
+        router.push("/login")
+        return
+      }
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", authUser.id)
+        .single()
+
+      if (error || !profile) {
+        router.push("/login")
+        return
+      }
+
+      setUser({
+        id: authUser.id,
+        name: profile.username,
+        email: profile.email,
+        points: profile.points || 0,
+        streak: profile.streak || 0,
+        lives: profile.lives || 3,
+        completedCourses: profile.completedCourses || [],
+      })
     }
+
+    getUser()
 
     const storedProgress = localStorage.getItem("sortify_progress")
     if (storedProgress) {
@@ -108,21 +136,19 @@ export default function CoursesPage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab("games")}
-            className={`flex-1 py-3 rounded-full font-semibold text-sm transition-all ${
-              activeTab === "games"
+            className={`flex-1 py-3 rounded-full font-semibold text-sm transition-all ${activeTab === "games"
                 ? "bg-[#00917A] text-white"
                 : "bg-white text-[#6B6B6B] border-2 border-[#E0DFD8]"
-            }`}
+              }`}
           >
             Games
           </button>
           <button
             onClick={() => setActiveTab("product")}
-            className={`flex-1 py-3 rounded-full font-semibold text-sm transition-all ${
-              activeTab === "product"
+            className={`flex-1 py-3 rounded-full font-semibold text-sm transition-all ${activeTab === "product"
                 ? "bg-[#00917A] text-white"
                 : "bg-white text-[#6B6B6B] border-2 border-[#E0DFD8]"
-            }`}
+              }`}
           >
             Progress
           </button>
@@ -142,16 +168,15 @@ export default function CoursesPage() {
                 key={course.id}
                 onClick={() => unlocked && router.push(`/courses/${course.id}`)}
                 disabled={!unlocked}
-                className={`${course.color} rounded-sm p-4 text-left transition-all active:scale-[0.98] relative overflow-hidden ${
-                  !unlocked ? "opacity-50" : ""
-                }`}
+                className={`${course.color} rounded-sm p-4 text-left transition-all active:scale-[0.98] relative overflow-hidden ${!unlocked ? "opacity-50" : ""
+                  }`}
               >
                 {status === "completed" && (
                   <div className="absolute top-3 right-3">
                     <CheckCircle className="w-5 h-5 text-[#00917A]" />
                   </div>
                 )}
-                
+
                 {!unlocked && (
                   <div className="absolute top-3 right-3">
                     <Lock className="w-5 h-5 text-[#100F06]/50" />
@@ -167,7 +192,7 @@ export default function CoursesPage() {
                 <h3 className="font-[var(--font-unbounded)] text-base font-bold text-[#100F06] mb-1 leading-tight">
                   {course.title}
                 </h3>
-                
+
                 <p className="text-xs text-[#100F06]/60 mb-3">
                   {course.time}
                 </p>

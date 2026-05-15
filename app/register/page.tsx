@@ -50,79 +50,67 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
 
-  e.preventDefault()
+    e.preventDefault()
 
-  if (!validateForm()) return
+    if (!validateForm()) return
 
-  setIsLoading(true)
+    setIsLoading(true)
 
-  // cek email & username
-  const { data: existingUsers } = await supabase
-    .from("users")
-    .select("username, email")
+    // cek email & username
+    const { data: existingUsers } = await supabase
+      .from("users")
+      .select("username, email")
 
-  const usernameExists = existingUsers?.some(
-    (user) =>
-      user.username.toLowerCase() === formData.name.toLowerCase()
-  )
+    const usernameExists = existingUsers?.some(
+      (user) =>
+        user.username.toLowerCase() === formData.name.toLowerCase()
+    )
 
-  const emailExists = existingUsers?.some(
-    (user) =>
-      user.email.toLowerCase() === formData.email.toLowerCase()
-  )
+    const emailExists = existingUsers?.some(
+      (user) =>
+        user.email.toLowerCase() === formData.email.toLowerCase()
+    )
 
-  if (usernameExists) {
-    setErrors({ name: "Username sudah digunakan" })
-    setIsLoading(false)
-    return
-  }
+    if (usernameExists) {
+      setErrors({ name: "Username sudah digunakan" })
+      setIsLoading(false)
+      return
+    }
 
-  if (emailExists) {
-    setErrors({ email: "Email sudah digunakan" })
-    setIsLoading(false)
-    return
-  }
+    if (emailExists) {
+      setErrors({ email: "Email sudah digunakan" })
+      setIsLoading(false)
+      return
+    }
 
-  // register auth
-  const { data, error } = await supabase.auth.signUp({
-  email: formData.email,
-  password: formData.password,
-  options: {
-    data: {
-      username: formData.name,
-    },
-  },
-})
-
-if (error) {
-  console.log(error)
-  return
-}
-
-if (data.user) {
-  await supabase.from("profiles").insert({
-    id: data.user.id,
-    username: formData.name,
-    email: formData.email,
-  })
-}
-
-  // simpan local user
-  localStorage.setItem(
-    "sortify_user",
-    JSON.stringify({
-      id: data.user?.id,
-      name: formData.name,
+    // register auth
+    const { data, error } = await supabase.auth.signUp({
       email: formData.email,
-      points: 0,
-      streak: 0,
-      lives: 3,
-      completedCourses: [],
+      password: formData.password,
+      options: {
+        data: {
+          username: formData.name,
+        },
+      },
     })
-  )
 
-  router.push("/dashboard")
-}
+    if (error) {
+      console.log(error)
+      return
+    }
+
+    if (data.user) {
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        username: formData.name,
+        email: formData.email,
+      })
+    }
+
+    // simpan local user tidak perlu karena pakai supabase
+
+    router.push("/dashboard")
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F4ED] px-5 py-6 flex flex-col">

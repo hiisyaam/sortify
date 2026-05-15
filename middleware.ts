@@ -40,6 +40,7 @@ export async function proxy(request: NextRequest) {
     "/profile",
     "/learn",
     "/game",
+    "/courses",
   ]
 
   // belum login
@@ -69,6 +70,7 @@ export const config = {
     "/profile/:path*",
     "/learn/:path*",
     "/game/:path*",
+    "/courses/:path*",
     "/login",
     "/register",
   ],
