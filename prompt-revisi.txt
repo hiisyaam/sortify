@@ -1,0 +1,18 @@
+
+--Halaman Dashboard
+1. Saat ini, sistem Poin atau bintang nya belum nyala. Sepertinya poin ini perlu di catat data nya dalam database. Tapi saya masih bingung stuktur database nya karena masih bisa di satukan dengan tabel lain Sepertinya. Poin bertambah jika selesai ngerjain soal atau Challenge. Kemudian untuk streak nya juga belum. Streak hanya bertambah 1 dalam satu hari dan itupun hanya jika pengguna berhasil menyelesaikan satu modul. Misal nya selesai sampai akhir belajar dan ngerjain modul selection sort.Untuk nyawa, hanya 3 nyawa saja. Ketika user gagal menjawab Challenge dan kemudian nyawa nya habis, maka setelah cooldown nyawa nya akan balik lagi ke 3. Nyawa sebagai syarat bisa masuk ke dalam suatu course. Berlaku di semua course
+2. Pada bagian Tantangan harian blm bisa di klik. Alias sistem belum dinamis menyesuaikan memberikan Tantangan harian berdasarkan terakhir user mengerjakan course. Oiya, pada search bar Cari course juga belum aktif. Silahkan aktifkan dengan menampilkan list course yang bisa di klik langsung mulai secara realtime. Jadi pencarian real time jatoh nya
+
+--Halaman Ketika buka suatu course
+2. Jadi ada baiknya ga cuma visual batang aja di bagian visualisasi. Saya mau ada code nya juga. Seolah ada code yang nge gambarin kodingan algortima nya. Misal array di code nya juga sama seperti angka yang di visualkan. Jadi kalo di reset ya reset. Kemudian belum ada opsi Ascnding dan Descending. User harus bisa milih ini mau dari terkeceil atau terbesar, beri panduan ke user biar ini di notice. Kemudian, untuk kecepatan iterasi hanya ada di 1 detik, 2, detik, 3 detik.
+4. Challenge belum dinamis. Maksudnya, saya perlu menyimpan soal di database. Sehingga saya bisa custom soal dan biar setiap orang tuh dapet soal yang beda beda walaupun course nya sama. Saya perlu petakan ini ke database sama seperi halnya tadi poin dan streak. Berikan juga tuntunan agar semua soal di simpan di database berdasarkan Challenge nya juga
+5. Ketika user berhasil pada tampilan Selamat!
+Kamu menyelesaikan {Nama Course}!, Maka munculkan sound suksess.mp3. Biar ada kesan satisfying buat user. Dan jangan lupa logika untuk menambhakan poin dan streak setelah user behasil menyelesaikan suatu course. 
+
+--Halaman Profile
+5. Profile belum jalan semua. Ga ada yang bisa di klik semua soal nya
+6. Level 1 100 xp, level 2 200 xp dan seteeruanya dan ini harus bisa naik juga seiring streak dan seberapa banyak course yang diselesaikan user. 
+7. Pengaturan diisi apaa? Jika tidak ada maka agak dinonaktifkan dengan kasih tulisan "Masih belum rilis atau perbaikan" atau malah dihapus saja
+8. Buat pencapaian harus ada. Sperti nya hal peserta didik dalam belajar maka harus ada progress pencapaian pembelajaran (analitik pembelajaran)
+9. Riwayat belajar juga harus ada.
+10. Friend rank di hapus aja, ganti dengan yg lain. Manfaat kan fitur yng ada disni yang sekiranya bisa mengisi kekosongan friend rank

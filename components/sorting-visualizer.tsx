@@ -2,27 +2,48 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { SortingStep } from "@/lib/types"
-import { Slider } from "@/components/ui/slider"
-import { Play, Pause, RotateCcw, SkipBack, SkipForward } from "lucide-react"
+import { Play, Pause, RotateCcw, SkipBack, SkipForward, ArrowUp, ArrowDown } from "lucide-react"
 
 interface SortingVisualizerProps {
   steps: SortingStep[]
   onComplete?: () => void
+  onSortOrderChange?: (order: "asc" | "desc") => void
+  sortOrder?: "asc" | "desc"
+  algorithmCode?: string
+  activeCodeLine?: number
 }
 
-export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps) {
+const SPEED_OPTIONS = [
+  { label: "1 detik", value: 1000 },
+  { label: "2 detik", value: 2000 },
+  { label: "3 detik", value: 3000 },
+]
+
+export function SortingVisualizer({
+  steps,
+  onComplete,
+  onSortOrderChange,
+  sortOrder = "asc",
+  algorithmCode,
+  activeCodeLine,
+}: SortingVisualizerProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [speed, setSpeed] = useState([500])
+  const [speedMs, setSpeedMs] = useState(1000)
   const prevSortedRef = useRef<number[]>([])
-  const prevComparingRef = useRef<number[]>([])
-  const prevSwappingRef = useRef<number[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioKuningRef = useRef<HTMLAudioElement | null>(null)
   const audioMerahRef = useRef<HTMLAudioElement | null>(null)
+  const codeContainerRef = useRef<HTMLDivElement | null>(null)
 
   const step = steps[currentStep]
   const maxHeight = Math.max(...step.array)
+  const codeLines = algorithmCode ? algorithmCode.split("\n") : []
+
+  // Compute active line from step index
+  const computedActiveLine = activeCodeLine !== undefined ? activeCodeLine : Math.floor(
+    (currentStep / Math.max(steps.length - 1, 1)) * Math.max(codeLines.length - 1, 0)
+  )
 
   useEffect(() => {
     audioRef.current = new Audio('/audio/pas-switch.wav')
@@ -32,6 +53,11 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
     audioMerahRef.current = new Audio('/audio/merah.wav')
     audioMerahRef.current.volume = 0.5
   }, [])
+
+  useEffect(() => {
+    setCurrentStep(0)
+    setIsPlaying(false)
+  }, [steps])
 
   useEffect(() => {
     const prevSorted = prevSortedRef.current
@@ -48,7 +74,6 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
       audioKuningRef.current.currentTime = 0
       audioKuningRef.current.play().catch(() => { })
     }
-    prevComparingRef.current = step.comparing
   }, [step.comparing])
 
   useEffect(() => {
@@ -56,8 +81,17 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
       audioMerahRef.current.currentTime = 0
       audioMerahRef.current.play().catch(() => { })
     }
-    prevSwappingRef.current = step.swapping
   }, [step.swapping])
+
+  // Auto-scroll code to active line
+  useEffect(() => {
+    if (codeContainerRef.current && codeLines.length > 0) {
+      const lineEl = codeContainerRef.current.querySelector(`[data-line="${computedActiveLine}"]`)
+      if (lineEl) {
+        lineEl.scrollIntoView({ block: "nearest", behavior: "smooth" })
+      }
+    }
+  }, [computedActiveLine, codeLines.length])
 
   const nextStep = useCallback(() => {
     if (currentStep < steps.length - 1) {
@@ -70,10 +104,10 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
 
   useEffect(() => {
     if (isPlaying) {
-      const timer = setTimeout(nextStep, speed[0])
+      const timer = setTimeout(nextStep, speedMs)
       return () => clearTimeout(timer)
     }
-  }, [isPlaying, speed, nextStep])
+  }, [isPlaying, speedMs, nextStep])
 
   const prevStep = () => {
     if (currentStep > 0) {
@@ -87,22 +121,46 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
   }
 
   const getBarColor = (index: number) => {
-    if (step.sorted.includes(index)) {
-      return "bg-[#00917A]"
-    }
-    if (step.swapping.includes(index)) {
-      return "bg-[#F47575]"
-    }
-    if (step.comparing.includes(index)) {
-      return "bg-[#FFDA57]"
-    }
+    if (step.sorted.includes(index)) return "bg-[#00917A]"
+    if (step.swapping.includes(index)) return "bg-[#F47575]"
+    if (step.comparing.includes(index)) return "bg-[#FFDA57]"
     return "bg-[#7DCAF6]"
   }
 
   return (
     <div className="space-y-4">
+      {/* Sort Order + Speed Controls */}
+      <div className="flex items-center gap-2">
+        {/* Ascending / Descending */}
+        <div className="flex gap-1 flex-1">
+          <button
+            onClick={() => onSortOrderChange?.("asc")}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-semibold transition-all ${sortOrder === "asc"
+              ? "bg-[#100F06] text-white"
+              : "bg-[#E0DFD8] text-[#100F06]"
+              }`}
+          >
+            <ArrowUp className="w-3.5 h-3.5" />
+            Ascending
+          </button>
+          <button
+            onClick={() => onSortOrderChange?.("desc")}
+            className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-semibold transition-all ${sortOrder === "desc"
+              ? "bg-[#100F06] text-white"
+              : "bg-[#E0DFD8] text-[#100F06]"
+              }`}
+          >
+            <ArrowDown className="w-3.5 h-3.5" />
+            Descending
+          </button>
+        </div>
+      </div>
+      <p className="text-[10px] text-[#6B6B6B] -mt-2">
+        💡 Pilih urutan sorting: dari terkecil (Ascending) atau terbesar (Descending)
+      </p>
+
       {/* Visualization Area */}
-      <div className="p-4">
+      <div className="p-4 bg-[#F5F4ED] rounded-xl">
         <div className="flex items-end justify-center gap-1.5 h-36">
           {step.array.map((value, index) => (
             <div
@@ -123,6 +181,40 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
           ))}
         </div>
       </div>
+
+      {/* Code Panel */}
+      {codeLines.length > 0 && (
+        <div className="bg-[#1A1A2E] rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2 bg-[#100F06]/80 border-b border-white/10">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#F47575]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#FFDA57]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#00917A]" />
+            </div>
+            <span className="text-[10px] text-white/50 font-mono">algorithm.js</span>
+          </div>
+          <div
+            ref={codeContainerRef}
+            className="p-4 max-h-40 overflow-y-auto font-mono text-[11px] space-y-0.5 scrollbar-thin"
+          >
+            {codeLines.map((line, i) => (
+              <div
+                key={i}
+                data-line={i}
+                className={`flex items-start gap-3 px-2 py-0.5 rounded transition-colors ${i === computedActiveLine
+                  ? "bg-[#FFDA57]/20 border-l-2 border-[#FFDA57]"
+                  : "border-l-2 border-transparent"
+                  }`}
+              >
+                <span className="text-white/30 w-4 flex-shrink-0 text-right select-none">{i + 1}</span>
+                <span className={i === computedActiveLine ? "text-[#FFDA57]" : "text-[#A8B2D8]"}>
+                  {line || " "}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-2">
@@ -158,20 +250,25 @@ export function SortingVisualizer({ steps, onComplete }: SortingVisualizerProps)
         </button>
       </div>
 
-      {/* Speed Control */}
+      {/* Speed Control - 3 Tombol */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[#6B6B6B]">Kecepatan</span>
-          <span className="font-medium text-[#100F06]">{1000 - speed[0]}ms</span>
+          <span className="text-[#6B6B6B]">Kecepatan Iterasi</span>
         </div>
-        <Slider
-          value={speed}
-          onValueChange={setSpeed}
-          min={100}
-          max={900}
-          step={100}
-          className="w-full"
-        />
+        <div className="flex gap-2">
+          {SPEED_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSpeedMs(opt.value)}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${speedMs === opt.value
+                ? "bg-[#00917A] text-white"
+                : "bg-[#E0DFD8] text-[#100F06]"
+                }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Progress */}

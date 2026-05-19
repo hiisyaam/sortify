@@ -1,18 +1,19 @@
 import { SortingStep, CodePuzzle, CodeBlock } from './types'
 
 // Bubble Sort Algorithm Steps Generator
-export function generateBubbleSortSteps(initialArray: number[]): SortingStep[] {
+export function generateBubbleSortSteps(initialArray: number[], order: 'asc' | 'desc' = 'asc'): SortingStep[] {
   const steps: SortingStep[] = []
   const arr = [...initialArray]
   const n = arr.length
   const sorted: number[] = []
+  const dirLabel = order === 'asc' ? 'terkecil ke terbesar' : 'terbesar ke terkecil'
 
   steps.push({
     array: [...arr],
     comparing: [],
     swapping: [],
     sorted: [],
-    explanation: `Memulai Bubble Sort dengan array: [${arr.join(', ')}]. Kita akan membandingkan elemen berdekatan dan menukarnya jika urutannya salah.`
+    explanation: `Memulai Bubble Sort (${dirLabel}) dengan array: [${arr.join(', ')}]. Kita akan membandingkan elemen berdekatan dan menukarnya jika urutannya salah.`
   })
 
   for (let i = 0; i < n - 1; i++) {
@@ -25,13 +26,15 @@ export function generateBubbleSortSteps(initialArray: number[]): SortingStep[] {
         explanation: `Iterasi ${i + 1}, Perbandingan ${j + 1}: Membandingkan ${arr[j]} dengan ${arr[j + 1]}.`
       })
 
-      if (arr[j] > arr[j + 1]) {
+      const shouldSwap = order === 'asc' ? arr[j] > arr[j + 1] : arr[j] < arr[j + 1]
+
+      if (shouldSwap) {
         steps.push({
           array: [...arr],
           comparing: [],
           swapping: [j, j + 1],
           sorted: [...sorted],
-          explanation: `${arr[j]} > ${arr[j + 1]}, maka tukar posisi!`
+          explanation: `${arr[j]} ${order === 'asc' ? '>' : '<'} ${arr[j + 1]}, maka tukar posisi!`
         })
 
         const temp = arr[j]
@@ -51,7 +54,7 @@ export function generateBubbleSortSteps(initialArray: number[]): SortingStep[] {
           comparing: [],
           swapping: [],
           sorted: [...sorted],
-          explanation: `${arr[j]} ≤ ${arr[j + 1]}, tidak perlu ditukar.`
+          explanation: `${arr[j]} ${order === 'asc' ? '≤' : '≥'} ${arr[j + 1]}, tidak perlu ditukar.`
         })
       }
     }
@@ -71,64 +74,67 @@ export function generateBubbleSortSteps(initialArray: number[]): SortingStep[] {
 }
 
 // Selection Sort Algorithm Steps Generator
-export function generateSelectionSortSteps(initialArray: number[]): SortingStep[] {
+export function generateSelectionSortSteps(initialArray: number[], order: 'asc' | 'desc' = 'asc'): SortingStep[] {
   const steps: SortingStep[] = []
   const arr = [...initialArray]
   const n = arr.length
   const sorted: number[] = []
+  const dirLabel = order === 'asc' ? 'terkecil ke terbesar' : 'terbesar ke terkecil'
+  const targetLabel = order === 'asc' ? 'terkecil' : 'terbesar'
 
   steps.push({
     array: [...arr],
     comparing: [],
     swapping: [],
     sorted: [],
-    explanation: `Memulai Selection Sort dengan array: [${arr.join(', ')}]. Kita akan mencari elemen terkecil dan menempatkannya di posisi yang benar.`
+    explanation: `Memulai Selection Sort (${dirLabel}) dengan array: [${arr.join(', ')}]. Kita akan mencari elemen ${targetLabel} dan menempatkannya di posisi yang benar.`
   })
 
   for (let i = 0; i < n - 1; i++) {
-    let minIdx = i
-    
+    let targetIdx = i
+
     steps.push({
       array: [...arr],
       comparing: [i],
       swapping: [],
       sorted: [...sorted],
-      explanation: `Iterasi ${i + 1}: Mencari elemen terkecil dari indeks ${i} hingga ${n - 1}. Sementara minimum: ${arr[minIdx]} di indeks ${minIdx}.`
+      explanation: `Iterasi ${i + 1}: Mencari elemen ${targetLabel} dari indeks ${i} hingga ${n - 1}. Sementara ${targetLabel}: ${arr[targetIdx]} di indeks ${targetIdx}.`
     })
 
     for (let j = i + 1; j < n; j++) {
       steps.push({
         array: [...arr],
-        comparing: [minIdx, j],
+        comparing: [targetIdx, j],
         swapping: [],
         sorted: [...sorted],
-        explanation: `Membandingkan minimum sementara (${arr[minIdx]}) dengan elemen di indeks ${j} (${arr[j]}).`
+        explanation: `Membandingkan ${targetLabel} sementara (${arr[targetIdx]}) dengan elemen di indeks ${j} (${arr[j]}).`
       })
 
-      if (arr[j] < arr[minIdx]) {
-        minIdx = j
+      const shouldUpdate = order === 'asc' ? arr[j] < arr[targetIdx] : arr[j] > arr[targetIdx]
+      if (shouldUpdate) {
+        targetIdx = j
         steps.push({
           array: [...arr],
-          comparing: [minIdx],
+          comparing: [targetIdx],
           swapping: [],
           sorted: [...sorted],
-          explanation: `Ditemukan minimum baru: ${arr[minIdx]} di indeks ${minIdx}.`
+          explanation: `Ditemukan ${targetLabel} baru: ${arr[targetIdx]} di indeks ${targetIdx}.`
         })
       }
     }
 
-    if (minIdx !== i) {
+    if (targetIdx !== i) {
       steps.push({
         array: [...arr],
         comparing: [],
-        swapping: [i, minIdx],
+        swapping: [i, targetIdx],
         sorted: [...sorted],
-        explanation: `Menukar ${arr[i]} dengan ${arr[minIdx]}.`
+        explanation: `Menukar ${arr[i]} dengan ${arr[targetIdx]}.`
       })
 
       const temp = arr[i]
-      arr[i] = arr[minIdx]
-      arr[minIdx] = temp
+      arr[i] = arr[targetIdx]
+      arr[targetIdx] = temp
     }
 
     sorted.push(i)
@@ -152,6 +158,41 @@ export function generateSelectionSortSteps(initialArray: number[]): SortingStep[
 
   return steps
 }
+
+// Algorithm code strings for visualization panel
+export const bubbleSortCode = `function bubbleSort(arr) {
+  const n = arr.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        // Tukar elemen
+        let temp = arr[j];
+        arr[j] = arr[j + 1];
+        arr[j + 1] = temp;
+      }
+    }
+  }
+  return arr;
+}`
+
+export const selectionSortCode = `function selectionSort(arr) {
+  const n = arr.length;
+  for (let i = 0; i < n - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIdx]) {
+        minIdx = j;
+      }
+    }
+    if (minIdx !== i) {
+      // Tukar elemen
+      let temp = arr[i];
+      arr[i] = arr[minIdx];
+      arr[minIdx] = temp;
+    }
+  }
+  return arr;
+}`
 
 // Bubble Sort Puzzles
 export const bubbleSortPuzzles: CodePuzzle[] = [

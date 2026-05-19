@@ -14,7 +14,9 @@ import {
   bubbleSortPuzzles,
   selectionSortPuzzles,
   bubbleSortCodeBlocks,
-  selectionSortCodeBlocks
+  selectionSortCodeBlocks,
+  bubbleSortCode,
+  selectionSortCode,
 } from "@/lib/sorting-algorithms"
 import { User, SortingStep, CodePuzzle, CodeBlock } from "@/lib/types"
 import {
@@ -38,10 +40,11 @@ interface CourseData {
   id: string
   title: string
   color: string
-  generateSteps: (arr: number[]) => SortingStep[]
+  generateSteps: (arr: number[], order: 'asc' | 'desc') => SortingStep[]
   puzzles: CodePuzzle[]
   codeBlocks: CodeBlock[]
   introDescription: string
+  algorithmCode: string
 }
 
 const courseDataMap: Record<string, CourseData> = {
@@ -52,6 +55,7 @@ const courseDataMap: Record<string, CourseData> = {
     generateSteps: generateBubbleSortSteps,
     puzzles: bubbleSortPuzzles,
     codeBlocks: bubbleSortCodeBlocks,
+    algorithmCode: bubbleSortCode,
     introDescription: "Bubble Sort adalah algoritma pengurutan sederhana yang membandingkan setiap pasangan elemen yang berdekatan dan menukarnya jika posisinya salah. Proses ini diulang sampai tidak ada lagi pertukaran yang terjadi, seolah-olah elemen terkecil/terbesar 'menggelembung' ke posisi yang benar.",
   },
   "selection-sort": {
@@ -61,7 +65,8 @@ const courseDataMap: Record<string, CourseData> = {
     generateSteps: generateSelectionSortSteps,
     puzzles: selectionSortPuzzles,
     codeBlocks: selectionSortCodeBlocks,
-    introDescription: "Selection Sort adalah algoritma pengurutan yang mencari elemen terkecil dalam bagian array yang belum terurut, lalu menukarnya dengan elemen pertama dari bagian itu. Proses ini diulang dengan menggeser batas bagian yang terurut hingga seluruh array berhasil diurus berurutan.",
+    algorithmCode: selectionSortCode,
+    introDescription: "Selection Sort adalah algoritma pengurutan yang mencari elemen terkecil dalam bagian array yang belum terurut, lalu menukarnya dengan elemen pertama dari bagian itu. Proses ini diulang dengan menggeser batas bagian yang terurut hingga seluruh array berhasil diurutkan.",
   },
 }
 
@@ -74,17 +79,20 @@ export default function CoursePage() {
   const [currentModule, setCurrentModule] = useState<ModuleType>("intro")
   const [lives, setLives] = useState(3)
   const [score, setScore] = useState(0)
+  const scoreRef = useRef(0) // ref untuk hindari stale closure
+  const userRef = useRef<User | null>(null) // ref untuk saveProgress
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
   const [sortingArray, setSortingArray] = useState<number[]>([])
   const [sortingSteps, setSortingSteps] = useState<SortingStep[]>([])
   const [livesDepletedAt, setLivesDepletedAt] = useState<number | null>(null)
   const [cooldownRemaining, setCooldownRemaining] = useState(0)
-  const audioLanjutRef = useRef<HTMLAudioElement | null>(null)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const audioSuksesRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    audioLanjutRef.current = new Audio('/audio/sukses.mp3')
-    audioLanjutRef.current.volume = 0.5
+    audioSuksesRef.current = new Audio('/audio/sukses.mp3')
+    audioSuksesRef.current.volume = 0.7
   }, [])
 
   // Cek cooldown dari localStorage saat pertama load
@@ -133,15 +141,17 @@ export default function CoursePage() {
   }, [courseId])
 
   const handleLanjutPuzzle = () => {
-    if (audioLanjutRef.current) {
-      audioLanjutRef.current.currentTime = 0
-      audioLanjutRef.current.play().catch(() => { })
-    }
     const isArrangementReady = currentPuzzleIndex >= courseDataMap[courseId]?.puzzles.length
     setCurrentModule(isArrangementReady ? "arrangement" : "puzzle")
   }
 
   const courseData = courseDataMap[courseId]
+
+  // Regenerate steps when sortOrder changes
+  useEffect(() => {
+    if (!sortingArray.length || !courseData) return
+    setSortingSteps(courseData.generateSteps(sortingArray, sortOrder))
+  }, [sortOrder, sortingArray, courseData])
 
   useEffect(() => {
     const getUser = async () => {
@@ -165,15 +175,23 @@ export default function CoursePage() {
         return
       }
 
-      setUser({
+      const u: User = {
         id: authUser.id,
         name: profile.username,
         email: profile.email,
         points: profile.points || 0,
         streak: profile.streak || 0,
-        lives: profile.lives || 3,
-        completedCourses: profile.completedCourses || [],
-      })
+        lives: profile.lives ?? 3,
+        completedCourses: profile.completed_courses || [],
+        last_activity_date: profile.last_activity_date || null,
+      }
+      setUser(u)
+      userRef.current = u
+
+      // Sync course_progress dari DB ke localStorage
+      if (profile.course_progress) {
+        localStorage.setItem("sortify_progress", JSON.stringify(profile.course_progress))
+      }
     }
 
     getUser()
@@ -185,11 +203,13 @@ export default function CoursePage() {
 
     const arr = generateRandomArray(6, 50)
     setSortingArray(arr)
-    setSortingSteps(courseData.generateSteps(arr))
+    setSortingSteps(courseData.generateSteps(arr, 'asc'))
   }, [router, courseData])
 
   const handlePuzzleCorrect = () => {
-    setScore(prev => prev + 25)
+    const newScore = scoreRef.current + 25
+    scoreRef.current = newScore
+    setScore(newScore)
     setShowConfetti(true)
     setTimeout(() => setShowConfetti(false), 2000)
 
@@ -204,7 +224,6 @@ export default function CoursePage() {
     }
   }
 
-  // Kurangi nyawa tapi tetap di puzzle yang sama
   const handlePuzzleWrongAnswer = () => {
     if (lives > 1) {
       setLives(prev => prev - 1)
@@ -214,16 +233,24 @@ export default function CoursePage() {
   }
 
   const handleArrangementCorrect = () => {
-    setScore(prev => prev + 50)
+    // Hitung final score SEBELUM setState untuk hindari stale closure
+    const finalScore = scoreRef.current + 50
+    scoreRef.current = finalScore
+    setScore(finalScore)
     setShowConfetti(true)
-    setTimeout(() => {
+    setTimeout(async () => {
       setShowConfetti(false)
       setCurrentModule("success")
-      saveProgress()
+      // Putar sound sukses
+      if (audioSuksesRef.current) {
+        audioSuksesRef.current.currentTime = 0
+        audioSuksesRef.current.play().catch(() => { })
+      }
+      // Pass finalScore langsung agar tidak terjadi stale closure
+      await saveProgress(finalScore)
     }, 1500)
   }
 
-  // Kurangi nyawa tapi tetap di arrangement yang sama
   const handleArrangementWrongAnswer = (_error: string) => {
     if (lives > 1) {
       setLives(prev => prev - 1)
@@ -232,31 +259,95 @@ export default function CoursePage() {
     }
   }
 
-  const saveProgress = async () => {
-    if (user) {
-      const updatedPoints = user.points + score + 50
-      const updatedStreak = user.streak + 1
-
-      const updatedUser = {
-        ...user,
-        points: updatedPoints,
-        streak: updatedStreak,
-      }
-      setUser(updatedUser)
-
-      await supabase
-        .from("profiles")
-        .update({
-          points: updatedPoints,
-          streak: updatedStreak,
-        })
-        .eq("id", user.id)
+  const saveProgress = async (finalScore: number) => {
+    const currentUser = userRef.current
+    if (!currentUser) {
+      console.error('[saveProgress] user is null, aborting')
+      return
     }
+
+    const totalPoints = finalScore
+    const updatedPoints = currentUser.points + totalPoints
+
+    const today = new Date().toISOString().split('T')[0]
+    const lastActivity = currentUser.last_activity_date
+    const isNewDay = !lastActivity || lastActivity !== today
+    const updatedStreak = isNewDay ? currentUser.streak + 1 : currentUser.streak
+
+    const existingCompleted = currentUser.completedCourses || []
+    const updatedCompleted = existingCompleted.includes(courseId)
+      ? existingCompleted
+      : [...existingCompleted, courseId]
 
     const storedProgress = localStorage.getItem("sortify_progress")
     const progress = storedProgress ? JSON.parse(storedProgress) : {}
     progress[courseId] = 100
     localStorage.setItem("sortify_progress", JSON.stringify(progress))
+
+    const updatedUser = {
+      ...currentUser,
+      points: updatedPoints,
+      streak: updatedStreak,
+      last_activity_date: today,
+      completedCourses: updatedCompleted,
+    }
+    setUser(updatedUser)
+    userRef.current = updatedUser
+
+    console.log('[saveProgress] saving:', { updatedPoints, updatedStreak, today, totalPoints })
+
+    // STEP 1: Update kolom yang pasti sudah ada (points & streak)
+    const { error: coreError } = await supabase
+      .from("profiles")
+      .update({ points: updatedPoints, streak: updatedStreak })
+      .eq("id", currentUser.id)
+
+    if (coreError) {
+      console.error('[saveProgress] core update failed:', coreError.message, '| code:', coreError.code)
+    } else {
+      console.log('[saveProgress] points & streak saved:', updatedPoints, updatedStreak)
+    }
+
+    // STEP 2: Update kolom baru (perlu jalankan migration SQL dulu)
+    try {
+      const { error: extError } = await supabase
+        .from("profiles")
+        .update({
+          last_activity_date: today,
+          completed_courses: updatedCompleted,
+          course_progress: progress,
+        })
+        .eq("id", currentUser.id)
+
+      if (extError) {
+        console.warn('[saveProgress] extended columns failed (jalankan migration SQL):', extError.message)
+      } else {
+        console.log('[saveProgress] extended fields saved OK')
+      }
+    } catch (e) {
+      console.warn('[saveProgress] extended update exception:', e)
+    }
+
+    // Simpan riwayat belajar
+    const { error: historyError } = await supabase
+      .from("learning_history")
+      .insert({
+        user_id: currentUser.id,
+        course_id: courseId,
+        course_title: courseData.title,
+        points_earned: totalPoints,
+      })
+
+    if (historyError) {
+      console.error('[saveProgress] history insert error:', historyError.message)
+    } else {
+      console.log('[saveProgress] learning history saved OK')
+    }
+  }
+
+
+  const handleSortOrderChange = (order: 'asc' | 'desc') => {
+    setSortOrder(order)
   }
 
   const resetGame = () => {
@@ -265,17 +356,20 @@ export default function CoursePage() {
     setCooldownRemaining(0)
     localStorage.removeItem(`sortify_cooldown_${courseId}`)
     setScore(0)
+    scoreRef.current = 0  // reset ref juga
     setCurrentPuzzleIndex(0)
     setCurrentModule("intro")
+    setSortOrder('asc')
     const arr = generateRandomArray(6, 50)
     setSortingArray(arr)
-    setSortingSteps(courseData.generateSteps(arr))
+    setSortingSteps(courseData.generateSteps(arr, 'asc'))
   }
+
 
   const generateNewArray = () => {
     const arr = generateRandomArray(6, 50)
     setSortingArray(arr)
-    setSortingSteps(courseData.generateSteps(arr))
+    setSortingSteps(courseData.generateSteps(arr, sortOrder))
   }
 
   if (!courseData || !user) {
@@ -389,7 +483,7 @@ export default function CoursePage() {
                 className="flex items-center gap-1 text-[#00917A] text-sm font-medium"
               >
                 <RefreshCw className="w-4 h-4" />
-                Acak
+                Acak Array
               </button>
             )}
           </div>
@@ -452,12 +546,15 @@ export default function CoursePage() {
                 Visualisasi
               </h2>
               <p className="text-[#6B6B6B] text-sm mb-4">
-                Perhatikan cara kerja {courseData.title}. Atur kecepatan sesuai keinginanmu.
+                Perhatikan cara kerja {courseData.title}. Pilih urutan dan kecepatan sesuai keinginanmu.
               </p>
 
               <SortingVisualizer
                 steps={sortingSteps}
                 onComplete={() => { }}
+                sortOrder={sortOrder}
+                onSortOrderChange={handleSortOrderChange}
+                algorithmCode={courseData.algorithmCode}
               />
             </div>
 
@@ -525,14 +622,14 @@ export default function CoursePage() {
             </div>
 
             <h2 className="font-[var(--font-unbounded)] text-2xl font-bold text-[#100F06] mb-2">
-              Selamat!
+              Selamat! 🎉
             </h2>
             <p className="text-[#6B6B6B] mb-6">
               Kamu menyelesaikan {courseData.title}!
             </p>
 
             <div className="bg-white rounded-sm p-5 border-2 border-[#E0DFD8] mb-6">
-              <h3 className="font-semibold text-[#100F06] mb-4">Reward</h3>
+              <h3 className="font-semibold text-[#100F06] mb-4">Reward yang Kamu Dapatkan</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-[#FFDA57]/20 rounded-sm p-4 text-center">
                   <Star className="w-8 h-8 text-[#FFDA57] mx-auto mb-2" />

@@ -7,6 +7,26 @@ export interface User {
   lives: number
   completedCourses: string[]
   currentCourse?: string
+  last_activity_date?: string | null
+}
+
+export interface Challenge {
+  id: string
+  course_id: string
+  type: 'puzzle' | 'arrangement'
+  question: string
+  code_template?: string
+  options?: string[]
+  correct_answer: string
+}
+
+export interface LearningHistory {
+  id: string
+  user_id: string
+  course_id: string
+  course_title: string
+  points_earned: number
+  completed_at: string
 }
 
 export interface Course {
