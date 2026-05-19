@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { BottomNav } from "@/components/bottom-nav"
 import { User } from "@/lib/types"
 import { Flame, Star, Trophy, ChevronRight, Lock, Search, X, BookOpen } from "lucide-react"
+import { OnboardingGuide } from "@/components/onboarding-guide"
 
 const allCourses = [
   {
@@ -53,6 +54,7 @@ export default function DashboardPage() {
   const [searchResults, setSearchResults] = useState<typeof allCourses>([])
   const [isSearching, setIsSearching] = useState(false)
   const [dailyChallenge, setDailyChallenge] = useState<{ courseId: string; title: string } | null>(null)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
@@ -118,6 +120,12 @@ export default function DashboardPage() {
       } else {
         setDailyChallenge(null)
       }
+
+      // Cek apakah user baru (belum pernah lihat onboarding)
+      const hasSeenOnboarding = localStorage.getItem(`sortify_onboarding_done_${authUser.id}`)
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true)
+      }
     }
 
 
@@ -153,8 +161,16 @@ export default function DashboardPage() {
   const courses = allCourses
   const displayCourses = isSearching ? [] : courses
 
+  const handleOnboardingComplete = () => {
+    if (user) {
+      localStorage.setItem(`sortify_onboarding_done_${user.id}`, "true")
+    }
+    setShowOnboarding(false)
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F4ED] pb-24">
+      {showOnboarding && <OnboardingGuide onComplete={handleOnboardingComplete} />}
       {/* Header */}
       <div className="px-5 pt-6 pb-2">
         <div className="flex items-center justify-between mb-6">

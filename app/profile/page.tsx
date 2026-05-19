@@ -21,6 +21,7 @@ import {
   Target,
   Award,
   TrendingUp,
+  HelpCircle,
 } from "lucide-react"
 
 // Level system: threshold XP untuk naik level
@@ -188,14 +189,23 @@ export default function ProfilePage() {
   }, [router])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    // Invalidate token secara menyeluruh (server-side) dengan scope 'global'
+    // Ini memastikan refresh token juga dicabut, bukan hanya sesi lokal
+    await supabase.auth.signOut({ scope: 'global' })
     // Jangan hapus sortify_progress — sudah persistent di database
-    // Hapus hanya data sementara (cooldown)
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sortify_cooldown_')) {
-        localStorage.removeItem(key)
+    // Hapus hanya data sementara (cooldown & session cache)
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (
+        key.startsWith('sortify_cooldown_') ||
+        key.startsWith('sb-') ||
+        key.includes('supabase')
+      )) {
+        keysToRemove.push(key)
       }
-    })
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key))
     router.push("/login")
   }
 
@@ -447,8 +457,23 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Logout Button */}
+      {/* Settings & Actions */}
       <div className="px-5 space-y-2">
+        {/* Panduan */}
+        <button
+          onClick={() => router.push('/guide')}
+          className="w-full bg-white rounded-2xl p-4 flex items-center gap-3 border-2 border-[#E0DFD8] active:bg-[#F5F4ED] transition-colors"
+        >
+          <div className="w-10 h-10 bg-[#7DCAF6]/20 rounded-xl flex items-center justify-center">
+            <HelpCircle className="w-5 h-5 text-[#7DCAF6]" />
+          </div>
+          <span className="flex-1 text-left font-medium text-[#100F06]">
+            Panduan Penggunaan
+          </span>
+          <ChevronRight className="w-4 h-4 text-[#A0A0A0]" />
+        </button>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
           className="w-full bg-[#F47575]/10 rounded-2xl p-4 flex items-center gap-3 border-2 border-[#F47575]/30 active:bg-[#F47575]/20 transition-colors"

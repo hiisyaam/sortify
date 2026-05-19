@@ -1,0 +1,8 @@
+1. Agar lebih interaktif, saya perlu halaman atau interaktvitas apps yang menyedikan panduan pengguna. Saya yakin user akan bingung pertamaan kali menggunakan apps ini. Mulai dari cara pake, smapai user itu sendiri mendapatkan manfaat dari belajar di platform ini. Anda bisa buat panduan interaktif buat nyruh user nya nyoba pencet" tombol atau klik elemen. Paksa user untuk harus ikutin panduan ketika pertama kali berhasil bikin akun dan masuk kehalam dashboard
+
+2. Sajikan juga halaman panduan biar kalo ada kelupaan cara pake, user bisa ke halaman itu. Taro menu nya aja di profile
+
+3. Saat ini notifikasi install di hp (buat PWA) malah redup. Ketika buka di web, ga ada notofikasi install seperti sebelum nya. Coba anda perbaiki.
+
+4. Pastikan benar" terlogout token ketika user logout
+
